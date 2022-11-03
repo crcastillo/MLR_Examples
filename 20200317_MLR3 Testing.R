@@ -49,43 +49,43 @@ gc()
 #* Set parameters
 setwd("C:/Users/Chris Castillo/Data Science/Projects/MLR Examples/MBO/")
 Random_Seed <- 123  # Set the random seed value
-Target <- 'Contraceptive_Yes'  # Set the target variable
+Target <- "Contraceptive_Yes"  # Set the target variable
 Iterations <- 10L  # Set the number of iterations for MBO to optimize over
 TimeBudget <- 60 * 15  # Establish the number of seconds to bound optimization too
 Cores <- future::availableCores() - 2
-Workspace <- './20211230_mlr3_Testing.RData'
+Workspace <- "./20211230_mlr3_Testing.RData"
 
 
 ### Import data, adjust data types ==================
 
 #* Import the dataset
 Data <- read.table(
-  file = 'https://archive.ics.uci.edu/ml/machine-learning-databases/cmc/cmc.data'
+  file = "https://archive.ics.uci.edu/ml/machine-learning-databases/cmc/cmc.data"
   , header = FALSE
-  , sep = ','  
+  , sep = ","
   , col.names = c(
-    'WifesAge'
-    , 'WifesEducation' # Low to High
-    , 'HusbandsEducation' # Low to High
-    , 'NumberOfChildren'
-    , 'WifesReligion'  # Non-Islam/Islam
-    , 'WifeWorking'  # Yes/No
-    , 'HusbandOccupation'
-    , 'StandardOfLivingIndex' # Low to High
-    , 'MediaExposure' # Good/Not Good
-    , 'ContraceptiveMethod'  # None/Long-Term/Short-Term
+    "WifesAge"
+    , "WifesEducation" # Low to High
+    , "HusbandsEducation" # Low to High
+    , "NumberOfChildren"
+    , "WifesReligion"  # Non-Islam/Islam
+    , "WifeWorking"  # Yes/No
+    , "HusbandOccupation"
+    , "StandardOfLivingIndex" # Low to High
+    , "MediaExposure" # Good/Not Good
+    , "ContraceptiveMethod"  # None/Long-Term/Short-Term
   )
   , colClasses = c(
-    'integer'
-    , 'factor'
-    , 'factor'
-    , 'integer'
-    , 'factor'
-    , 'factor'
-    , 'factor'
-    , 'factor'
-    , 'factor'
-    , 'factor'
+    "integer"
+    , "factor"
+    , "factor"
+    , "integer"
+    , "factor"
+    , "factor"
+    , "factor"
+    , "factor"
+    , "factor"
+    , "factor"
   )
 )
 
@@ -113,12 +113,12 @@ Data_Split <- rsample::initial_split(data = Data, prop = 0.70)
 Data_Train <- droplevels(training(Data_Split))
 Data_Test <- droplevels(testing(Data_Split))
 
-#* Create character vector of 'predictor's and replace the Target location with 'outcome'
-Role_Vector <- rep(x = 'predictor', ncol(Data_Train))
-Role_Vector[match(table = names(Data_Train), x = Target)] <- 'outcome'
+#* Create character vector of "predictor"s and replace the Target location with "outcome"
+Role_Vector <- rep(x = "predictor", ncol(Data_Train))
+Role_Vector[match(table = names(Data_Train), x = Target)] <- "outcome"
 
 
-#* Create recipes object for pre-processing and instantiate all step_'s
+#* Create recipes object for pre-processing and instantiate all step_"s
 Rec_Obj <- recipes::recipe(
   x = Data_Train
   , roles = Role_Vector
@@ -136,7 +136,7 @@ Rec_Obj <- recipes::recipe(
   step_corr(
     all_numeric()
     , threshold = 0.90
-    , method = 'pearson'
+    , method = "pearson"
   ) %>%
   step_lincomb(
     all_numeric()
@@ -172,7 +172,7 @@ Train_Task <- mlr3::TaskClassif$new(
   id = "Train_Cirrhosis"
   , backend = Data_Train
   , target = Target
-  , positive = '1'
+  , positive = "1"
 )
 
 #* Test out autoplot functionality
@@ -182,20 +182,20 @@ mlr3viz::autoplot(Train_Task)
 ### Run rpart mlr3 | SUCCESS ==================
 
 #* Create rpart learner
-rpart_lrn <- mlr_learners$get(key = 'classif.rpart')
+rpart_lrn <- mlr_learners$get(key = "classif.rpart")
 
 #* Print the parameter set for the learner
 print(rpart_lrn$param_set)
 
-#* Change predict type of learner to 'prob'
-rpart_lrn$predict_type <- 'prob'
+#* Change predict type of learner to "prob"
+rpart_lrn$predict_type <- "prob"
 
 #* Train the learner
 rpart_lrn$train(
   task = Train_Task
 )
 
-#* Print the trained model 
+#* Print the trained model
 print(rpart_lrn$model)
 
 #* Create predictions
@@ -204,7 +204,7 @@ rpart_pred <- rpart_lrn$predict(
     id = "Test_Cirrhosis"
     , backend = Data_Test
     , target = Target
-    , positive = '1'
+    , positive = "1"
   )
 )
 
@@ -212,8 +212,8 @@ rpart_pred <- rpart_lrn$predict(
 rpart_pred$confusion
 
 #* Use autoplot on the class prediction
-autoplot(rpart_pred)  
-autoplot(rpart_pred, type = 'roc')  # AUC plot
+autoplot(rpart_pred)
+autoplot(rpart_pred, type = "roc")  # AUC plot
 
 #* Print out a few measures of the classifier performance
 rpart_pred$score(msr("classif.acc")) %>% print()
@@ -225,11 +225,13 @@ save.image(Workspace)
 ### Run rpart mlr3 w/ Resampling | SUCCESS ==================
 
 #* Find the resampling methods
-mlr_resamplings %>% as.data.table() %>% print()
+mlr_resamplings %>%
+  as.data.table() %>%
+  print()
 
 #* Instantiate a resampling object
-rpart_resample = rsmp(
-  'cv'
+rpart_resample <- rsmp(
+  "cv"
   , folds = 5L
 )
 
@@ -238,13 +240,12 @@ rpart_resample$instantiate(task = Train_Task)
 
 #* Start parallelization
 future::plan(
-  strategy = future::multisession(
-    workers = Cores
-  )
+  strategy = future::multisession()
+  , workers = Cores
 )
 
 #* Run resampling for rpart
-Train_resample = mlr3::resample(
+Train_resample <- mlr3::resample(
   task = Train_Task
   , learner = rpart_lrn
   , resampling = rpart_resample
@@ -253,27 +254,26 @@ Train_resample = mlr3::resample(
 
 # #* Compare runtimes for sequential vs parallel
 # microbm <- microbenchmark::microbenchmark(
-#   'Sequential' = {Train_resample <- mlr3::resample(
+#   "Sequential" = {Train_resample <- mlr3::resample(
 #     task = Train_Task
 #     , learner = rpart_lrn
 #     , resampling = rsmp(
-#       'repeated_cv'
+#       "repeated_cv"
 #       , repeats = 10L
 #       , folds = 5L
 #     )
 #     , store_models = FALSE
 #   )}
-#   , 'Parallel' = {
+#   , "Parallel" = {
 #     future::plan(
-#       strategy = future::multisession(
-#         workers = Cores
-#       )
+#       strategy = future::multisession()
+#       , workers = Cores
 #     );
 #     Train_resample = mlr3::resample(
 #       task = Train_Task
 #       , learner = rpart_lrn
 #       , resampling = rsmp(
-#         'repeated_cv'
+#         "repeated_cv"
 #         , repeats = 10L
 #         , folds = 5L
 #       )
@@ -286,7 +286,7 @@ Train_resample = mlr3::resample(
 ### Run rpart mlr3 w/ Hyperparameter Tuning | SUCCESS ==================
 
 #* Create rpart parameter set
-rpart_ps = mlr3verse::ps(
+rpart_ps <- mlr3verse::ps(
   cp = paradox::p_dbl(
     lower = 0.001
     , upper = 1
@@ -302,27 +302,27 @@ rpart_ps = mlr3verse::ps(
 )
 
 #* Instantiate a Tuning Instance
-rpart_tune = mlr3tuning::TuningInstanceSingleCrit$new(
+rpart_tune <- mlr3tuning::TuningInstanceSingleCrit$new(
   task = Train_Task
   , learner = rpart_lrn
   , resampling = mlr3::rsmp(
-    .key = 'cv'
+    .key = "cv"
     , folds = 5
     )
   , measure = mlr3::msr("classif.auc")
   , search_space = rpart_ps
   , terminator = bbotk::TerminatorCombo$new(
     terminators = list(
-      trm('evals', n_evals = 1000)
-      , trm('run_time', secs = 60 * 5)
-      # , trm('stagnation', iters = 10L, threshold = 1e-05)
+      trm("evals", n_evals = 1000)
+      , trm("run_time", secs = 60 * 5)
+      # , trm("stagnation", iters = 10L, threshold = 1e-05)
     )
   )
 )
 
 
-#* Instantiate a Tuner, 'gensa' doesn't support ParamInt...
-rpart_tuner = mlr3tuning::tnr('random_search')
+#* Instantiate a Tuner, "gensa" doesn"t support ParamInt...
+rpart_tuner <- mlr3tuning::tnr("random_search")
 
 #* Tune it | SUCCESS
 rpart_tuner$optimize(
@@ -334,18 +334,17 @@ rpart_tuner$optimize(
 lgr::get_logger("mlr3")$set_threshold("error")
 lgr::get_logger("bbotk")$set_threshold("error")
 microbm_tuner <- microbenchmark::microbenchmark(
-  'Sequential' = {
+  "Sequential" = {
     rpart_tuner$optimize(
       inst = rpart_tune
     )
     }
   ,
-  'Parallel' = {
+  "Parallel" = {
     future::plan(
-      strategy = future::multisession(
-        workers = Cores
-      )
-    );
+      strategy = future::multisession()
+      , workers = Cores
+    )
     rpart_tuner$optimize(
       inst = rpart_tune
     )
@@ -359,17 +358,17 @@ lgr::get_logger("bbotk")$set_threshold("info")
 ### Run ranger mlr3 w/ Resampling | SUCCESS ==================
 
 #* Create ranger learner
-ranger_lrn <- mlr_learners$get(key = 'classif.ranger')
+ranger_lrn <- mlr_learners$get(key = "classif.ranger")
 
 #* Print the parameter set for the learner
 ranger_lrn$param_set %>% print()
 
-#* Change predict type of learner to 'prob'
-ranger_lrn$predict_type <- 'prob'
+#* Change predict type of learner to "prob"
+ranger_lrn$predict_type <- "prob"
 
 #* Instantiate a resampling object
 ranger_resample = rsmp(
-  'repeated_cv'
+  "repeated_cv"
   , repeats = 10L
   , folds = 5L
 )
@@ -378,7 +377,7 @@ ranger_resample = rsmp(
 ranger_resample$instantiate(task = Train_Task)
 
 #* Run resampling for ranger
-Train_resample_ranger = mlr3::resample(
+Train_resample_ranger <- mlr3::resample(
   task = Train_Task
   , learner = ranger_lrn
   , resampling = ranger_resample
@@ -386,34 +385,33 @@ Train_resample_ranger = mlr3::resample(
 )
 
 #* Display aggregate and individual performance
-Train_resample_ranger$aggregate(measures = msr('classif.auc')) %>% print()
-Train_resample_ranger$score(measures = msr('classif.auc')) %>% print()
+Train_resample_ranger$aggregate(measures = msr("classif.auc")) %>% print()
+Train_resample_ranger$score(measures = msr("classif.auc")) %>% print()
 
 
 #* Compare runtimes for sequential vs parallel
 lgr::get_logger("mlr3")$set_threshold("error")
 microbm <- microbenchmark::microbenchmark(
-  'Sequential' = {Train_resample_ranger <- mlr3::resample(
+  "Sequential" = {Train_resample_ranger <- mlr3::resample(
     task = Train_Task
     , learner = ranger_lrn
     , resampling = rsmp(
-      'repeated_cv'
+      "repeated_cv"
       , repeats = 10L
       , folds = 5L
     )
     , store_models = FALSE
   )}
-  , 'Parallel' = {
+  , "Parallel" = {
     future::plan(
-      strategy = future::multisession(
-        workers = Cores
-      )
-    );
+      strategy = future::multisession()
+      , workers = Cores
+    )
     Train_resample_ranger = mlr3::resample(
       task = Train_Task
       , learner = ranger_lrn
       , resampling = rsmp(
-        'repeated_cv'
+        "repeated_cv"
         , repeats = 10L
         , folds = 5L
       )
@@ -427,7 +425,7 @@ lgr::get_logger("mlr3")$set_threshold("info")
 ### Run ranger mlr3 w/ Hyperparameter Tuning | SUCCESS  ==================
 
 #* Create ranger parameter set
-ranger_ps = mlr3verse::ps(
+ranger_ps <- mlr3verse::ps(
   num.trees = paradox::p_int(
     lower = 1
     , upper = 10
@@ -452,26 +450,26 @@ ranger_ps = mlr3verse::ps(
 )
 
 #* Instantiate a Tuning Instance
-ranger_tune = mlr3tuning::TuningInstanceSingleCrit$new(
+ranger_tune <- mlr3tuning::TuningInstanceSingleCrit$new(
   task = Train_Task
   , learner = ranger_lrn
   , resampling = mlr3::rsmp(
-    .key = 'cv'
+    .key = "cv"
     , folds = 5
   )
   , measure = mlr3::msr("classif.auc")
   , search_space = ranger_ps
   , terminator = bbotk::TerminatorCombo$new(
     terminators = list(
-      trm('evals', n_evals = 1000)
-      , trm('run_time', secs = 60 * 10)
+      trm("evals", n_evals = 1000)
+      , trm("run_time", secs = 60 * 10)
     )
   )
 )
 
 
-#* Instantiate a Tuner, 'gensa' doesn't support ParamInt...
-ranger_tuner = mlr3tuning::tnr('random_search')
+#* Instantiate a Tuner, "gensa" doesn"t support ParamInt...
+ranger_tuner <- mlr3tuning::tnr("random_search")
 
 #* Tune it
 lgr::get_logger("mlr3")$set_threshold("error")
@@ -499,17 +497,16 @@ ranger_lrn$train(Train_Task)
 # lgr::get_logger("mlr3")$set_threshold("error")
 # lgr::get_logger("bbotk")$set_threshold("error")
 # microbm_tuner <- microbenchmark::microbenchmark(
-#   'Sequential' = {
+#   "Sequential" = {
 #     rpart_tuner$optimize(
 #       inst = rpart_tune
 #     )
 #   }
 #   ,
-#   'Parallel' = {
+#   "Parallel" = {
 #     future::plan(
-#       strategy = future::multisession(
-#         workers = Cores
-#       )
+#       strategy = future::multisession()
+#       , workers = Cores
 #     );
 #     rpart_tuner$optimize(
 #       inst = rpart_tune
@@ -527,42 +524,42 @@ Test_Score <- ranger_lrn$predict_newdata(
 )
 
 #* Show Test performance
-Test_Score$score(msr('classif.auc')) %>% print()
+Test_Score$score(msr("classif.auc")) %>% print()
 
 ### Try out mlr3pipelines |   ==================
 
 #* Recreate the training data for preprocessing
-Data_Training <- Data_Split %>% 
-  rsample::training() %>% 
+Data_Training <- Data_Split %>%
+  rsample::training() %>%
   droplevels() %>%
   mlr3::TaskClassif$new(
     id = "Train_Cirrhosis_2"
     , backend = .
     , target = Target
-    , positive = '1'
+    , positive = "1"
   )
 
 mlr3pipelines::mlr_pipeops %>% as.data.table()
 
 Train_Task$col_roles
 
-# mlr3pipelines::po('fixfactors') %>>%
+# mlr3pipelines::po("fixfactors") %>>%
 
 TEST <- mlr3pipelines::po(
-    'imputemode'
+    "imputemode"
     , param_vals = list(
       affect_columns = selector_type("factor")
     )
   ) %>>%
   mlr3pipelines::po(
-    'imputemean'
+    "imputemean"
     , param_vals = list(
       affect_columns = selector_type(c("integer", "numeric"))
     )
   ) %>>%
   mlr3pipelines::po(
-    'filter'
-    , filter = mlr3filters::flt('find_correlation')
+    "filter"
+    , filter = mlr3filters::flt("find_correlation")
     , param_vals = list(
       affect_columns = selector_type(c("integer", "numeric"))
       , filter.cutoff = 0.8
@@ -592,7 +589,7 @@ Rec_Obj <- recipes::recipe(
   step_corr(
     all_numeric()
     , threshold = 0.90
-    , method = 'pearson'
+    , method = "pearson"
   ) %>%
   step_lincomb(
     all_numeric()
